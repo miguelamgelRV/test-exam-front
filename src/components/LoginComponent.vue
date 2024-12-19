@@ -31,12 +31,17 @@
                                 :rules="passwordRules" :type="!show ? 'text' : 'password'" density="compact" outlined
                                 class="rounded-lg" placeholder="Ingresa tu contraseña" prepend-inner-icon="mdi-lock-outline"
                                 variant="outlined" @click:append-inner="show = !show"></v-text-field>
-                            <v-btn depressed color="primary" rounded="lg" block variant="tonal" @click="submit">Entrar</v-btn>
+                            <v-btn depressed color="primary" rounded="lg" block variant="tonal"
+                                @click="submit">Entrar</v-btn>
                         </v-form>
                     </v-card-text>
                 </v-card>
             </v-col>
         </v-row>
+
+        <v-snackbar v-model="snackbar" :timeout="2000" :color="colorSnackBar" rounded="lg">
+            {{ messageSnackBar }}
+        </v-snackbar>
     </v-container>
 </template>
 
@@ -69,17 +74,22 @@ export default {
                 },
             ],
             show: true,
+            changeConfirm: false,
+            colorSnackBar: 'success',
+            messageSnackBar: '',
         }
     },
-    mounted(){
+    mounted() {
         localStorage.removeItem('token');
     },
     methods: {
         async submit() {
             if (this.valid) {
                 const response = await this.login();
-                if(!response){
-                    alert("Ocurrio un error y no se pudo iniciar tu sesión intenta más tarde.")
+                if (!response) {
+                    this.messageSnackBar = 'Credenciales incorrectass.'
+                    this.colorSnackBar = 'error'
+                    this.snackbar = true;
                 } else {
                     this.$router.push('/home')
                 }
@@ -90,24 +100,26 @@ export default {
 
         login() {
             const params = {
-               email: this.email,
-               password: this.password 
+                email: this.email,
+                password: this.password
             }
 
-            return new Promise((res, rej) => {
+            return new Promise((res) => {
                 axios.post(`${process.env.VUE_APP_API_URL}/login`, params)
-                .then((response) => {
-                    if(response.data.token){
-                        localStorage.setItem('token', response.data.token);
-                        res(true)
-                    } else {
-                        res(false)
-                    }
-                })
-                .catch((err) => {
-                    alert(err);
-                    rej(err);
-                })
+                    .then((response) => {
+                        if (response.data.token) {
+                            localStorage.setItem('token', response.data.token);
+                            res(true)
+                        } else {
+                            res(false)
+                        }
+                    })
+                    .catch((err) => {
+                        this.messageSnackBar = 'Credenciales incorrectass.'
+                        this.colorSnackBar = 'error'
+                        this.snackbar = true;
+                        console.error(err)
+                    })
             })
         }
     }
